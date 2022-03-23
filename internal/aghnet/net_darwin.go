@@ -4,10 +4,10 @@
 package aghnet
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/AdguardTeam/AdGuardHome/internal/aghos"
 	"github.com/AdguardTeam/golibs/errors"
@@ -69,11 +69,11 @@ func getNetworkSetupHardwareReports() map[string]string {
 
 	m := make(map[string]string)
 
-	matches := re.FindAllStringSubmatch(out, -1)
+	matches := re.FindAllSubmatch(out, -1)
 	for i := range matches {
 		port := matches[i][1]
 		device := matches[i][2]
-		m[device] = port
+		m[string(device)] = string(port)
 	}
 
 	return m
@@ -89,17 +89,17 @@ func getHardwarePortInfo(hardwarePort string) (hardwarePortInfo, error) {
 
 	re := regexp.MustCompile("IP address: (.*?)\nSubnet mask: (.*?)\nRouter: (.*?)\n")
 
-	match := re.FindStringSubmatch(out)
+	match := re.FindSubmatch(out)
 	if len(match) == 0 {
 		return h, errors.Error("could not find hardware port info")
 	}
 
 	h.name = hardwarePort
-	h.ip = match[1]
-	h.subnet = match[2]
-	h.gatewayIP = match[3]
+	h.ip = string(match[1])
+	h.subnet = string(match[2])
+	h.gatewayIP = string(match[3])
 
-	if strings.Index(out, "Manual Configuration") == 0 {
+	if bytes.Index(out, []byte("Manual Configuration")) == 0 {
 		h.static = true
 	}
 

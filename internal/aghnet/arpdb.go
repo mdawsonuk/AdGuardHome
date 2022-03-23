@@ -2,10 +2,10 @@ package aghnet
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"net"
-	"strings"
 	"sync"
 
 	"github.com/AdguardTeam/AdGuardHome/internal/aghos"
@@ -136,7 +136,7 @@ var _ ARPDB = (*cmdARPDB)(nil)
 // not equals 0 or the execution itself failed.
 func runCmd(cmd string, args ...string) (r io.Reader, err error) {
 	var code int
-	var out string
+	var out []byte
 	code, out, err = aghos.RunCommand(cmd, args...)
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func runCmd(cmd string, args ...string) (r io.Reader, err error) {
 		return nil, fmt.Errorf("unexpected exit code %d", code)
 	}
 
-	return strings.NewReader(out), nil
+	return bytes.NewReader(out), nil
 }
 
 // Refresh implements the ARPDB interface for *cmdARPDB.
