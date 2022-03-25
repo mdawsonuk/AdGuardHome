@@ -1,12 +1,9 @@
 package aghnet
 
 import (
-	"io"
 	"net"
-	"strings"
 	"sync"
 	"testing"
-	"testing/iotest"
 
 	"github.com/AdguardTeam/golibs/errors"
 	"github.com/AdguardTeam/golibs/testutil"
@@ -153,6 +150,7 @@ func TestARPDBS(t *testing.T) {
 
 func TestCmdARPDB_arpa(t *testing.T) {
 	a := &cmdARPDB{
+		cmd:   "cmd",
 		parse: parseArpA,
 		ns: &neighs{
 			mu: &sync.RWMutex{},
@@ -161,7 +159,7 @@ func TestCmdARPDB_arpa(t *testing.T) {
 	}
 
 	t.Run("arp_a", func(t *testing.T) {
-		a.runcmd = func() (r io.Reader, err error) { return strings.NewReader(arpAOutput), nil }
+		testShell{"cmd": {err: nil, out: arpAOutput, code: 0}}.set(t)
 
 		err := a.Refresh()
 		require.NoError(t, err)
@@ -170,32 +168,18 @@ func TestCmdARPDB_arpa(t *testing.T) {
 	})
 
 	t.Run("runcmd_error", func(t *testing.T) {
-		a.runcmd = func() (r io.Reader, err error) { return nil, errors.Error("can't run") }
+		testShell{"cmd": {err: errors.Error("can't run"), out: ``, code: 0}}.set(t)
 
 		err := a.Refresh()
 		testutil.AssertErrorMsg(t, "cmd arpdb: running command: can't run", err)
 	})
-}
 
-func TestCmdARPDB_errors(t *testing.T) {
-	const errRead errors.Error = "can't read"
+	t.Run("bad_code", func(t *testing.T) {
+		testShell{"cmd": {err: nil, out: ``, code: 1}}.set(t)
 
-	badReaderRunCmd := runCmdFunc(func() (r io.Reader, err error) {
-		return iotest.ErrReader(errRead), nil
+		err := a.Refresh()
+		testutil.AssertErrorMsg(t, "cmd arpdb: running command: unexpected exit code 1", err)
 	})
-
-	a := &cmdARPDB{
-		runcmd: badReaderRunCmd,
-		parse:  parseArpA,
-		ns: &neighs{
-			mu: &sync.RWMutex{},
-			ns: make([]Neighbor, 0),
-		},
-	}
-
-	const wantErrMsg string = "cmd arpdb: scanning the output: " + string(errRead)
-
-	testutil.AssertErrorMsg(t, wantErrMsg, a.Refresh())
 }
 
 func TestEmptyARPDB(t *testing.T) {

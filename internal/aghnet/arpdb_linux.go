@@ -6,7 +6,6 @@ package aghnet
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"io/fs"
 	"net"
 	"strings"
@@ -36,9 +35,9 @@ func newARPDB() (arp *arpdbs) {
 		// Try /proc/net/arp first.
 		&fsysARPDB{ns: ns, fsys: aghos.RootDirFS(), filename: "proc/net/arp"},
 		// Try "arp -a" then.
-		&cmdARPDB{parse: parseF, runcmd: rcArpA, ns: ns},
+		&cmdARPDB{parse: parseF, cmd: "arp", args: []string{"-a"}, ns: ns},
 		// Try "ip neigh" finally.
-		&cmdARPDB{parse: parseIPNeigh, runcmd: rcIPNeigh, ns: ns},
+		&cmdARPDB{parse: parseIPNeigh, cmd: "ip", args: []string{"neigh"}, ns: ns},
 	)
 }
 
@@ -185,11 +184,6 @@ func parseArpA(sc *bufio.Scanner, lenHint int) (ns []Neighbor) {
 	}
 
 	return ns
-}
-
-// rcIPNeigh runs "ip neigh".
-func rcIPNeigh() (r io.Reader, err error) {
-	return runCmd("ip", "neigh")
 }
 
 // parseIPNeigh parses the output of the "ip neigh" command on Linux.  The
