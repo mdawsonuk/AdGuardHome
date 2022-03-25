@@ -159,7 +159,8 @@ func TestCmdARPDB_arpa(t *testing.T) {
 	}
 
 	t.Run("arp_a", func(t *testing.T) {
-		testShell{"cmd": {err: nil, out: arpAOutput, code: 0}}.set(t)
+		sh := theOnlyCmd("cmd", 0, arpAOutput, nil)
+		substShell(t, sh.RunCmd)
 
 		err := a.Refresh()
 		require.NoError(t, err)
@@ -168,14 +169,16 @@ func TestCmdARPDB_arpa(t *testing.T) {
 	})
 
 	t.Run("runcmd_error", func(t *testing.T) {
-		testShell{"cmd": {err: errors.Error("can't run"), out: ``, code: 0}}.set(t)
+		sh := theOnlyCmd("cmd", 0, "", errors.Error("can't run"))
+		substShell(t, sh.RunCmd)
 
 		err := a.Refresh()
 		testutil.AssertErrorMsg(t, "cmd arpdb: running command: can't run", err)
 	})
 
 	t.Run("bad_code", func(t *testing.T) {
-		testShell{"cmd": {err: nil, out: ``, code: 1}}.set(t)
+		sh := theOnlyCmd("cmd", 1, "", nil)
+		substShell(t, sh.RunCmd)
 
 		err := a.Refresh()
 		testutil.AssertErrorMsg(t, "cmd arpdb: running command: unexpected exit code 1", err)

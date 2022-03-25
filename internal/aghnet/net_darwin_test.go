@@ -14,13 +14,13 @@ import (
 func TestIfaceHasStaticIP(t *testing.T) {
 	testCases := []struct {
 		name       string
-		shell      testShell
+		shell      mapShell
 		ifaceName  string
 		wantHas    assert.BoolAssertionFunc
 		wantErrMsg string
 	}{{
 		name: "success",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -37,7 +37,7 @@ func TestIfaceHasStaticIP(t *testing.T) {
 		wantErrMsg: ``,
 	}, {
 		name: "success_static",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -55,19 +55,18 @@ func TestIfaceHasStaticIP(t *testing.T) {
 		wantErrMsg: ``,
 	}, {
 		name: "reports_error",
-		shell: testShell{
-			"networksetup -listallhardwareports": {
-				err:  errors.Error("can't list"),
-				out:  ``,
-				code: 0,
-			},
-		},
+		shell: theOnlyCmd(
+			"networksetup -listallhardwareports",
+			0,
+			"",
+			errors.Error("can't list"),
+		),
 		ifaceName:  "en0",
 		wantHas:    assert.False,
 		wantErrMsg: `could not find hardware port for en0`,
 	}, {
 		name: "port_error",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -84,7 +83,7 @@ func TestIfaceHasStaticIP(t *testing.T) {
 		wantErrMsg: `can't get`,
 	}, {
 		name: "port_bad_output",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -103,7 +102,7 @@ func TestIfaceHasStaticIP(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.shell.set(t)
+			substShell(t, tc.shell.RunCmd)
 
 			has, err := IfaceHasStaticIP(tc.ifaceName)
 			testutil.AssertErrorMsg(t, tc.wantErrMsg, err)
@@ -125,12 +124,12 @@ func TestIfaceSetStaticIP(t *testing.T) {
 
 	testCases := []struct {
 		name       string
-		shell      testShell
+		shell      mapShell
 		fsys       fs.FS
 		wantErrMsg string
 	}{{
 		name: "success",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -156,7 +155,7 @@ func TestIfaceSetStaticIP(t *testing.T) {
 		wantErrMsg: ``,
 	}, {
 		name: "static_already",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -173,18 +172,17 @@ func TestIfaceSetStaticIP(t *testing.T) {
 		wantErrMsg: `ip address is already static`,
 	}, {
 		name: "reports_error",
-		shell: testShell{
-			"networksetup -listallhardwareports": {
-				err:  errors.Error("can't list"),
-				out:  ``,
-				code: 0,
-			},
-		},
+		shell: theOnlyCmd(
+			"networksetup -listallhardwareports",
+			0,
+			"",
+			errors.Error("can't list"),
+		),
 		fsys:       panicFsys,
 		wantErrMsg: `could not find hardware port for en0`,
 	}, {
 		name: "resolv_conf_error",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -204,7 +202,7 @@ func TestIfaceSetStaticIP(t *testing.T) {
 		wantErrMsg: `found no dns servers in etc/resolv.conf`,
 	}, {
 		name: "set_dns_error",
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -225,8 +223,7 @@ func TestIfaceSetStaticIP(t *testing.T) {
 		wantErrMsg: `can't set`,
 	}, {
 		name: "set_manual_error",
-
-		shell: testShell{
+		shell: mapShell{
 			"networksetup -listallhardwareports": {
 				err:  nil,
 				out:  "Hardware Port: hwport\nDevice: en0\n",
@@ -254,8 +251,8 @@ func TestIfaceSetStaticIP(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.shell.set(t)
-			setTestRootDirFS(t, tc.fsys)
+			substShell(t, tc.shell.RunCmd)
+			substRootDirFS(t, tc.fsys)
 
 			err := IfaceSetStaticIP("en0")
 			testutil.AssertErrorMsg(t, tc.wantErrMsg, err)

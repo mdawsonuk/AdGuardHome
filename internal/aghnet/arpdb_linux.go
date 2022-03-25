@@ -33,11 +33,25 @@ func newARPDB() (arp *arpdbs) {
 
 	return newARPDBs(
 		// Try /proc/net/arp first.
-		&fsysARPDB{ns: ns, fsys: aghos.RootDirFS(), filename: "proc/net/arp"},
-		// Try "arp -a" then.
-		&cmdARPDB{parse: parseF, cmd: "arp", args: []string{"-a"}, ns: ns},
-		// Try "ip neigh" finally.
-		&cmdARPDB{parse: parseIPNeigh, cmd: "ip", args: []string{"neigh"}, ns: ns},
+		&fsysARPDB{
+			ns:       ns,
+			fsys:     rootDirFS,
+			filename: "proc/net/arp",
+		},
+		// Then, try "arp -a".
+		&cmdARPDB{
+			parse: parseF,
+			ns:    ns,
+			cmd:   "arp",
+			args:  []string{"-a"},
+		},
+		// Finally, try "ip neigh".
+		&cmdARPDB{
+			parse: parseIPNeigh,
+			ns:    ns,
+			cmd:   "ip",
+			args:  []string{"neigh"},
+		},
 	)
 }
 

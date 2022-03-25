@@ -95,7 +95,7 @@ func ifaceHasStaticIP(ifaceName string) (has bool, err error) {
 		FileWalker: iface.ifacesStaticConfig,
 		filename:   "etc/network/interfaces",
 	}} {
-		has, err = pair.Walk(aghos.RootDirFS(), pair.filename)
+		has, err = pair.Walk(rootDirFS, pair.filename)
 		if err != nil {
 			return false, err
 		}

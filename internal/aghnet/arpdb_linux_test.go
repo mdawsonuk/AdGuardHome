@@ -61,10 +61,11 @@ func TestFSysARPDB(t *testing.T) {
 }
 
 func TestCmdARPDB_linux(t *testing.T) {
-	testShell{
+	sh := mapShell{
 		"arp -a":   {err: nil, out: arpAOutputWrt, code: 0},
 		"ip neigh": {err: nil, out: ipNeighOutput, code: 0},
-	}.set(t)
+	}
+	substShell(t, sh.RunCmd)
 
 	t.Run("wrt", func(t *testing.T) {
 		a := &cmdARPDB{

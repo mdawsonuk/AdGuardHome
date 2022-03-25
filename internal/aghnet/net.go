@@ -19,6 +19,8 @@ import (
 // variable instead of a direct call to make it substitutable in tests.
 var aghosRunCommand = aghos.RunCommand
 
+// rootDirFS is the filesystem pointing to the root directory.  It's an
+// unexported variable instead to make it substitutable in tests.
 var rootDirFS = aghos.RootDirFS()
 
 // ErrNoStaticIPInfo is returned by IfaceHasStaticIP when no information about
